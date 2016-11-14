@@ -29,6 +29,7 @@
             android:background="@drawable/seabar_input"
             android:drawableLeft="@drawable/search_bar_icon_normal"
             android:hint="搜索"
+            android:drawableRight="@drawable/ic_edit_input_clear"
             android:imeOptions="actionSearch"
             android:paddingBottom="5dp"
             android:paddingLeft="5dp"

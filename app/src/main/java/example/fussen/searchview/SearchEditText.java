@@ -2,19 +2,23 @@ package example.fussen.searchview;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
-public class SearchEditText extends EditText implements View.OnKeyListener, View.OnFocusChangeListener {
+public class SearchEditText extends EditText implements View.OnKeyListener, View.OnFocusChangeListener, TextWatcher {
 
 
     /**
-     * 是否是默认图标再左边的样式
+     * 是否显示在左边
      */
     private boolean isShowNormal = false;
     /**
@@ -25,7 +29,19 @@ public class SearchEditText extends EditText implements View.OnKeyListener, View
      * 软键盘搜索键监听
      */
     private OnSearchClickListener listener;
-    private Drawable[] drawables;
+
+    private Drawable[] drawables; // 控件的图片资源
+    private Drawable drawableLeft, drawableDel; // 搜索图标和删除按钮图标
+    private int eventX, eventY; // 记录点击坐标
+    private Rect rect; // 控件区域
+
+    public void setOnSearchClickListener(OnSearchClickListener listener) {
+        this.listener = listener;
+    }
+
+    public interface OnSearchClickListener {
+        void onSearchClick(View view);
+    }
 
     public SearchEditText(Context context) {
         this(context, null);
@@ -37,64 +53,44 @@ public class SearchEditText extends EditText implements View.OnKeyListener, View
         init();
     }
 
-    public SearchEditText(Context context, AttributeSet attrs, int editTextStyle) {
-        super(context, attrs, editTextStyle);
+    public SearchEditText(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
         init();
     }
 
     private void init() {
-
-
-        // getCompoundDrawables:
-        // Returns drawables for the left, top, right, and bottom borders.
-        drawables = this.getCompoundDrawables();
-
-        // 设置焦点变化的监听
-        this.setOnFocusChangeListener(this);
-        this.setOnKeyListener(this);
+        setOnFocusChangeListener(this);
+        setOnKeyListener(this);
+        addTextChangedListener(this);
     }
-
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (isShowNormal) { // 如果是默认样式，则直接绘制
+        if (isShowNormal) { // 如果是默认样式，直接绘制
+            if (length() < 1) {
+                drawableDel = null;
+            }
+            this.setCompoundDrawablesWithIntrinsicBounds(drawableLeft, null, drawableDel, null);
             super.onDraw(canvas);
         } else { // 如果不是默认样式，需要将图标绘制在中间
-            Drawable drawableLeft = drawables[0];
-            Drawable drawableRight = drawables[2];
-            translate(drawableLeft, canvas);
-            super.onDraw(canvas);
-        }
-
-    }
-
-
-    public void translate(Drawable drawable, Canvas canvas) {
-        if (drawable != null) {
+            if (drawables == null) drawables = getCompoundDrawables();
+            if (drawableLeft == null) drawableLeft = drawables[0];
             float textWidth = getPaint().measureText(getHint().toString());
             int drawablePadding = getCompoundDrawablePadding();
-            int drawableWidth = drawable.getIntrinsicWidth();
+            int drawableWidth = drawableLeft.getIntrinsicWidth();
             float bodyWidth = textWidth + drawableWidth + drawablePadding;
-            if (drawable == getCompoundDrawables()[0]) {
-                canvas.translate((getWidth() - bodyWidth - getPaddingLeft() - getPaddingRight()) / 2, 0);
-            } else {
-                setPadding(getPaddingLeft(), getPaddingTop(), (int) (getWidth() - bodyWidth - getPaddingLeft()), getPaddingBottom());
-                canvas.translate((getWidth() - bodyWidth - getPaddingLeft()) / 2, 0);
-            }
+            canvas.translate((getWidth() - bodyWidth - getPaddingLeft() - getPaddingRight()) / 2, 0);
+            super.onDraw(canvas);
         }
     }
-
 
     @Override
     public void onFocusChange(View v, boolean hasFocus) {
-
-        // 恢复EditText默认的样式
+        // 被点击时，恢复默认样式
         if (!pressSearch && TextUtils.isEmpty(getText().toString())) {
             isShowNormal = hasFocus;
         }
     }
-
-
 
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
@@ -105,23 +101,56 @@ public class SearchEditText extends EditText implements View.OnKeyListener, View
             if (imm.isActive()) {
                 imm.hideSoftInputFromWindow(v.getApplicationWindowToken(), 0);
             }
-            if (event.getAction() == KeyEvent.ACTION_UP) {
-                listener.onSearchClick(v);
-            }
+            listener.onSearchClick(v);
         }
         return false;
     }
 
-    public interface OnSearchClickListener {
-        void onSearchClick(View view);
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        // 清空edit内容
+        if (drawableDel != null && event.getAction() == MotionEvent.ACTION_UP) {
+            eventX = (int) event.getRawX();
+            eventY = (int) event.getRawY();
+            if (rect == null) rect = new Rect();
+            getGlobalVisibleRect(rect);
+            rect.left = rect.right - drawableDel.getIntrinsicWidth();
+            if (rect.contains(eventX, eventY)) {
+                setText("");
+            }
+        }
+        // 删除按钮被按下时改变图标样式
+        if (drawableDel != null && event.getAction() == MotionEvent.ACTION_DOWN) {
+            eventX = (int) event.getRawX();
+            eventY = (int) event.getRawY();
+            if (rect == null) rect = new Rect();
+            getGlobalVisibleRect(rect);
+            rect.left = rect.right - drawableDel.getIntrinsicWidth();
+            if (rect.contains(eventX, eventY))
+                drawableDel = this.getResources().getDrawable(R.drawable.ic_edit_input_clear);
+        } else {
+            drawableDel = this.getResources().getDrawable(R.drawable.ic_edit_input_clear);
+        }
+        return super.onTouchEvent(event);
     }
 
-    /**
-     * 设置软键盘搜索按钮的监听
-     *
-     * @param listener
-     */
-    public void setOnSearchClickListener(OnSearchClickListener listener) {
-        this.listener = listener;
+    @Override
+    public void afterTextChanged(Editable arg0) {
+        if (this.length() < 1) {
+            drawableDel = null;
+        } else {
+            drawableDel = this.getResources().getDrawable(R.drawable.ic_edit_input_clear);
+        }
     }
+
+    @Override
+    public void beforeTextChanged(CharSequence arg0, int arg1, int arg2,
+                                  int arg3) {
+    }
+
+    @Override
+    public void onTextChanged(CharSequence arg0, int arg1, int arg2,
+                              int arg3) {
+    }
+
 }
