@@ -7,6 +7,7 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -66,6 +67,7 @@ public class SearchEditText extends EditText implements View.OnKeyListener, View
 
     @Override
     protected void onDraw(Canvas canvas) {
+
         if (isShowNormal) { // 如果是默认样式，直接绘制
             if (length() < 1) {
                 drawableDel = null;
@@ -101,6 +103,7 @@ public class SearchEditText extends EditText implements View.OnKeyListener, View
                 imm.hideSoftInputFromWindow(v.getApplicationWindowToken(), 0);
             }
             if (event.getAction() == KeyEvent.ACTION_UP) {
+                pressSearch = false;
                 listener.onSearchClick(v);
             }
         }
