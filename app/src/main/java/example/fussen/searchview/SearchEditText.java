@@ -7,7 +7,6 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -124,7 +123,6 @@ public class SearchEditText extends EditText implements View.OnKeyListener, View
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_UP:
-
                 boolean isClean = (event.getX() > (getWidth() - getTotalPaddingRight()))
                         && (event.getX() < (getWidth() - getPaddingRight()));
                 if (isClean) {
