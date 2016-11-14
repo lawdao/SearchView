@@ -22,7 +22,6 @@ public class MainActivity extends AppCompatActivity {
 
         search = (SearchEditText) findViewById(R.id.query);
 
-
         search.setOnSearchClickListener(new SearchEditText.OnSearchClickListener() {
             @Override
             public void onSearchClick(View view) {

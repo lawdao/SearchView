@@ -2,7 +2,6 @@ package example.fussen.searchview;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -32,8 +31,6 @@ public class SearchEditText extends EditText implements View.OnKeyListener, View
 
     private Drawable[] drawables; // 控件的图片资源
     private Drawable drawableLeft, drawableDel; // 搜索图标和删除按钮图标
-    private int eventX, eventY; // 记录点击坐标
-    private Rect rect; // 控件区域
 
     public void setOnSearchClickListener(OnSearchClickListener listener) {
         this.listener = listener;
@@ -59,9 +56,12 @@ public class SearchEditText extends EditText implements View.OnKeyListener, View
     }
 
     private void init() {
+
         setOnFocusChangeListener(this);
         setOnKeyListener(this);
         addTextChangedListener(this);
+
+        drawables = getCompoundDrawables();
     }
 
     @Override
@@ -73,8 +73,7 @@ public class SearchEditText extends EditText implements View.OnKeyListener, View
             this.setCompoundDrawablesWithIntrinsicBounds(drawableLeft, null, drawableDel, null);
             super.onDraw(canvas);
         } else { // 如果不是默认样式，需要将图标绘制在中间
-            if (drawables == null) drawables = getCompoundDrawables();
-            if (drawableLeft == null) drawableLeft = drawables[0];
+            drawableLeft = drawables[0];
             float textWidth = getPaint().measureText(getHint().toString());
             int drawablePadding = getCompoundDrawablePadding();
             int drawableWidth = drawableLeft.getIntrinsicWidth();
@@ -101,35 +100,37 @@ public class SearchEditText extends EditText implements View.OnKeyListener, View
             if (imm.isActive()) {
                 imm.hideSoftInputFromWindow(v.getApplicationWindowToken(), 0);
             }
-            listener.onSearchClick(v);
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                listener.onSearchClick(v);
+            }
         }
         return false;
     }
 
+    /**
+     * 当手指抬起的位置在clean的图标的区域 我们将此视为进行清除操作
+     * getWidth():得到控件的宽度
+     * event.getX():抬起时的坐标(改坐标是相对于控件本身而言的)
+     * getTotalPaddingRight():clean的图标左边缘至控件右边缘的距离
+     * getPaddingRight():clean的图标右边缘至控件右边缘的距离
+     * 于是:
+     * getWidth() - getTotalPaddingRight()表示: 控件左边到clean的图标左边缘的区域
+     * getWidth() - getPaddingRight()表示: 控件左边到clean的图标右边缘的区域 所以这两者之间的区域刚好是clean的图标的区域
+     */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        // 清空edit内容
-        if (drawableDel != null && event.getAction() == MotionEvent.ACTION_UP) {
-            eventX = (int) event.getRawX();
-            eventY = (int) event.getRawY();
-            if (rect == null) rect = new Rect();
-            getGlobalVisibleRect(rect);
-            rect.left = rect.right - drawableDel.getIntrinsicWidth();
-            if (rect.contains(eventX, eventY)) {
-                setText("");
-            }
-        }
-        // 删除按钮被按下时改变图标样式
-        if (drawableDel != null && event.getAction() == MotionEvent.ACTION_DOWN) {
-            eventX = (int) event.getRawX();
-            eventY = (int) event.getRawY();
-            if (rect == null) rect = new Rect();
-            getGlobalVisibleRect(rect);
-            rect.left = rect.right - drawableDel.getIntrinsicWidth();
-            if (rect.contains(eventX, eventY))
-                drawableDel = this.getResources().getDrawable(R.drawable.ic_edit_input_clear);
-        } else {
-            drawableDel = this.getResources().getDrawable(R.drawable.ic_edit_input_clear);
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_UP:
+
+                boolean isClean = (event.getX() > (getWidth() - getTotalPaddingRight()))
+                        && (event.getX() < (getWidth() - getPaddingRight()));
+                if (isClean) {
+                    setText("");
+                }
+                break;
+
+            default:
+                break;
         }
         return super.onTouchEvent(event);
     }
