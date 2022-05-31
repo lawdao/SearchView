@@ -131,10 +131,4 @@
     }
 ```
 
-##最后说明
-1. 做完了这些，你想要的模样就能都实现了，实现的方式各有不同，请海涵
-2. [我的博客](http://blog.csdn.net/fussenyu)
-3. 如果你觉得这篇文章还不错，那就关注关注我吧
-4. 微信公共号：AppCode，扫描下面二维码即可关注
 
-![](http://ww1.sinaimg.cn/large/65e4f1e6gw1f9btkbltksj2076076aaj.jpg)
